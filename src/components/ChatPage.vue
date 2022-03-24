@@ -1,22 +1,32 @@
 <template>
-  <div class="user-name">
+  <div
+    :style="chatTarget.email ? 'display:none' : 'display:flex'"
+    class="user-name"
+  >
     <h3>Hi, {{ userName }}</h3>
     <button @click="signOut">SIGN OUT</button>
   </div>
 
-  <!-- DONE: 開始按鈕「轉跳到」對話視窗 -->
-
+  <!-- if start 是 true 會顯示按鈕 -->
   <div class="start-btn" v-if="startToogle">
     <h1 @click.prevent="startChat">START</h1>
   </div>
 
+  <!-- else false 會顯示 開始聊天 [ Loading 及 聊天室 ] -->
   <div v-else>
-    <div class="loading_page" v-if="isLoading">
-      <img src="/loading.svg" alt="" />
+    <!-- if 沒有聊天對象會顯示 Loading -->
+    <div class="loading_page" v-if="!chatTarget.email">
+      <button @click="cancelLoadong">Cancel ( {{ count }} )</button>
+      <img src="/wait.svg" alt="" />
       <h1>Waiting For Connection...</h1>
     </div>
 
-    <div class="chat-container" :style='isLoading?"display:none":"display:block"' v-else>
+    <!-- else 會顯示聊天室 -->
+    <div
+      class="chat-container"
+      :style="!chatTarget.email ? 'display:none' : 'display:flex'"
+      v-else
+    >
       <div class="chat-head">
         <!-- DONE: 回到開始畫面安鈕「點擊事件」 -->
 
@@ -78,7 +88,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUpdated, watch } from "vue";
+import { ref, onMounted, onUpdated, watch, watchEffect } from "vue";
 import { API_HOST } from "../assets/global/const";
 import Axios from "axios";
 import { loginChecker } from "../login_checker";
@@ -110,6 +120,9 @@ const isLoading = ref(true);
 // --- 輸入內容 ---
 const msgContent = ref("");
 
+// --- 倒數 ---
+const count = ref(30);
+
 // --- 聊天訊息陣列 ---
 let groupMsg = ref({});
 
@@ -118,11 +131,10 @@ const sortNames = (username1, username2) => {
   return [username1, username2].sort().join("-");
 };
 
+// --- 訊息顯示最底部 ---
 const scrollToBottom = () => {
   const container = document.getElementById("container");
   container.scrollTop = container.scrollHeight;
-  console.log(container.scrollTop);
-  console.log(container.scrollHeight);
 };
 
 // ---- 畫面一開始取得使用者資料 ----
@@ -136,20 +148,42 @@ onMounted(async () => {
     userVerfied.value = user.email_verfied;
   }
   if (document.getElementById("container")) {
-    console.log("to Bottom");
+    // console.log("to Bottom");
     scrollToBottom();
   }
 });
 
+// ---- 最新內容顯示在最底部 ----
 onUpdated(() => {
   if (document.getElementById("container")) {
-    console.log("to Bottom");
+    // console.log("to Bottom");
     scrollToBottom();
   }
+  // console.log(groupMsg.value);
 });
 
 // ---- 開始配對聊天 ----
+let countDown;
+let watcher;
 const startChat = () => {
+  // --- 30 秒倒數 ---
+  count.value = 30;
+  watcher = watchEffect(() => {
+    if (count.value > 0) {
+      countDown = setTimeout(() => {
+        count.value -= 1;
+        console.log(count.value);
+      }, 1000);
+    }
+    if (count.value === 0 && !chatTarget.value.email) {
+      cancelLoadong();
+    }
+    if (chatTarget.value.email) {
+      clearTimeout(countDown);
+      watcher();
+    }
+  });
+
   startToogle.value = !startToogle.value;
 
   // ---- 連線 socket.io ----
@@ -225,7 +259,6 @@ const startChat = () => {
 // ---- 送出訊息 ----
 const sendMsg = () => {
   // --- 講聊天內容用 socket 傳遞 ---
-
   if (chatTarget.value.email && msgContent.value !== "") {
     const data = {
       id: uuid.v4(),
@@ -251,16 +284,43 @@ const sendMsg = () => {
   }
 };
 
-// ----- 離開聊天室 ----
-const leaveRoom = () => {
-  // ---- 轉回 start ----
-  startToogle.value = !startToogle.value;
+const cancelLoadong = () => {
+  watcher();
+  clearTimeout(countDown);
   // ---- 登出 socket.io ----
   socket.disconnect();
   // ---- 對象清空 ----
   chatTarget.value = {};
   // ---- 等待中 為 false ---
   isLoading.value = false;
+  // ---- 轉回 start ----
+  startToogle.value = true;
+};
+
+// ----- 離開聊天室 ----
+const leaveRoom = () => {
+  // ---- 清空聊天記錄 ----
+  const msg = `[系統訊息]：很可惜！對方已離開聊天室囉！期待下次的緣分吧！`;
+  const data = {
+    id: uuid.v4(),
+    sender: { name: userName.value, email: userEmail.value },
+    receiver: chatTarget.value,
+    msg: msg,
+  };
+  socket.emit("send_message", data);
+
+  setTimeout(() => {
+    // ---- 登出 socket.io ----
+    socket.disconnect();
+    const room = sortNames(userEmail.value, chatTarget.value.email);
+    delete groupMsg.value[room];
+    // ---- 對象清空 ----
+    chatTarget.value = {};
+    // ---- 等待中 為 false ---
+    isLoading.value = false;
+    // ---- 轉回 start ----
+    startToogle.value = true;
+  }, 100);
 };
 
 // ---- 登出 ----

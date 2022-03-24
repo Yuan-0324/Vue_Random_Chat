@@ -260,6 +260,7 @@ body {
 }
 
 .chat-container {
+    position: relative;
     overflow: hidden;
     width: 550px;
     height: 600px;
@@ -366,6 +367,7 @@ body {
         width: 100%;
         height: 80px;
         box-shadow: 5px 0px 10px rgba(0, 0, 0, 0.5);
+
         form {
             display: flex;
             justify-content: center;
@@ -413,6 +415,13 @@ body {
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    button {
+        background-color: transparent;
+        color: #fff;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+    }
     h1 {
         text-align: center;
         font-size: 20px;
@@ -431,7 +440,6 @@ body {
         height: 100%;
         width: 100%;
         overflow: hidden;
-        
     }
     body {
         margin: 0;
@@ -583,9 +591,16 @@ body {
         }
     }
     .chat-container {
-        width: 95%;
+        width: 100vw;
         margin: auto;
         margin-top: 20px;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        border-radius: 0;
+        height: 100%;
+        // border: none;
+        box-shadow: none;
         .chat-head {
             button {
                 font-size: 14px;
@@ -607,7 +622,10 @@ body {
             }
         }
         .chat-content {
-            // width: 100%;
+            width: 100%;
+            flex-grow: 1;
+            overflow: scroll;
+            // height: 100%;
             .chat {
                 padding-top: 1px;
                 padding-bottom: 1px;
@@ -635,22 +653,23 @@ body {
             height: 70px;
             form {
                 display: flex;
-                justify-content: center;
+                justify-content: space-between;
                 align-items: center;
                 .message {
                     margin: 0;
-                    width: 90%;
+                    width: 75%;
                     border-radius: 0;
                     font-size: 16px;
+                    margin-left: 5%;
                 }
                 .send-message {
                     padding: 3px 15px;
                     font-size: 14px;
                     box-shadow: none;
                     border-radius: 0;
-                    // margin-left: 2%;
+                    // margin-left: 5%;
                     border-left: 1px solid #fff;
-                    display: none;
+                    // display: none;
                 }
             }
         }
