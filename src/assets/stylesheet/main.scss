@@ -308,6 +308,9 @@ body {
         width: 100%;
         flex-grow: 1;
         overflow: scroll;
+        &::-webkit-scrollbar {
+            display: none;
+        }
         .chat {
             * {
                 font-family: "Noto Sans TC", sans-serif;

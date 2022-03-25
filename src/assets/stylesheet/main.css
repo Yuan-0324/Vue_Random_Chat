@@ -429,6 +429,10 @@ body {
   overflow: scroll;
 }
 
+.chat-container .chat-content::-webkit-scrollbar {
+  display: none;
+}
+
 .chat-container .chat-content .chat {
   display: -webkit-box;
   display: -ms-flexbox;
