@@ -38,8 +38,6 @@
       <div
         id="container"
         class="chat-content"
-        v-for="message in Object.values(groupMsg)"
-        :key="message"
       >
         <!-- DONE: 這裡渲染對話框 -->
         <!-- DONE: 看能否偵測上一個是否同人留言，是的話可以不用顯示名稱 -->
@@ -47,25 +45,18 @@
         <div
           class="chat"
           :id="msg.sender.email == userEmail ? 'right' : 'left'"
-          v-for="(msg, index) in message"
+          v-for="(msg, index) in Object.values(groupMsg)[0]"
           :key="msg.id"
         >
           <h6
             :style="
               index > 0
-                ? message[index - 1].sender.email == msg.sender.email
+                ? Object.values(groupMsg)[0][index - 1].sender.email == msg.sender.email
                   ? 'display:none'
                   : ''
                 : ''
             "
           >
-            <!-- {{
-            index > 0
-              ? message[index - 1].sender.email == msg.sender.email
-                ? ""
-                : msg.sender.name
-              : msg.sender.name
-          }} -->
             {{ msg.sender.name }}
           </h6>
           <p>{{ msg.msg }}</p>
@@ -195,6 +186,7 @@ const startChat = () => {
     chat: chating.value,
   });
 
+  // ---- 所有使用者 ----
   socket.on("all_user", (users) => {
     const tempUsers = { ...users };
 
@@ -204,9 +196,41 @@ const startChat = () => {
       (temp) => temp.chat !== true
     );
 
-    // ---- 所有使用者 ----
-    // console.log("[使用者清單]", tempArr);
     allUsers.value = tempArr;
+
+    // -------- 可聊天對象 --------
+    socket.on("chat_list", (chatList) => {
+      const currentUser =
+        chatList.find((chat) => chat.email == userEmail.value) || {};
+
+      // --- 排除自己後的可聊天清單 ---
+      const newChatList = chatList.filter(
+        (user) => user.email !== userEmail.value
+      );
+      // 如果自己還未配對 且聊天清單有一人以上可以配對時 開始配對
+      if (currentUser.email && !currentUser.chat && newChatList.length >= 1) {
+        isLoading.value = false;
+
+        // ---- 跟進來的第一個做連線 ----
+        const targetUser = newChatList[0];
+
+        console.log(newChatList);
+
+        chatTarget.value = targetUser;
+
+        socket.emit("compare", {
+          currentUser: userEmail.value,
+          targetUser: targetUser.email,
+        });
+      } else {
+        // --- 當未配對到人時 ---
+        if (!chatTarget.value.email) {
+          console.log("Waiting For User Login");
+          // --- 等待中 為 true ---
+          isLoading.value = true;
+        }
+      }
+    });
   });
 
   socket.on("new_message", (msg) => {
@@ -227,33 +251,39 @@ const startChat = () => {
   });
 
   // ---- 可聊天對象 ----
-  socket.on("chat_list", (chatList) => {
-    const currentUser =
-      chatList.find((chat) => chat.email == userEmail.value) || {};
+  // socket.on("chat_list", (chatList) => {
+  //   const currentUser =
+  //     chatList.find((chat) => chat.email == userEmail.value) || {};
 
-    // --- 排除自己後的可聊天清單 ---
-    const newChatList = chatList.filter(
-      (user) => user.email !== userEmail.value
-    );
-    // 如果自己還未配對 且聊天清單有一人以上可以配對時 開始配對
-    if (currentUser.email && !currentUser.chat && newChatList.length >= 1) {
-      isLoading.value = false;
-      const targetUser =
-        newChatList[Math.floor(Math.random() * newChatList.length)];
-      chatTarget.value = targetUser;
-      socket.emit("compare", {
-        currentUser: userEmail.value,
-        targetUser: targetUser.email,
-      });
-    } else {
-      // --- 當未配對到人時 ---
-      if (!chatTarget.value.email) {
-        console.log("Waiting For User Login");
-        // --- 等待中 為 true ---
-        isLoading.value = true;
-      }
-    }
-  });
+  //   // --- 排除自己後的可聊天清單 ---
+  //   const newChatList = chatList.filter(
+  //     (user) => user.email !== userEmail.value
+  //   );
+  //   // 如果自己還未配對 且聊天清單有一人以上可以配對時 開始配對
+  //   if (currentUser.email && !currentUser.chat && newChatList.length >= 1) {
+  //     isLoading.value = false;
+
+  //     // const targetUser =
+  //     //   newChatList[Math.floor(Math.random() * newChatList.length)];
+
+  //     // ---- little change ----
+  //     const targetUser = newChatList[0];
+  //     // -----------------------
+
+  //     chatTarget.value = targetUser;
+  //     socket.emit("compare", {
+  //       currentUser: userEmail.value,
+  //       targetUser: targetUser.email,
+  //     });
+  //   } else {
+  //     // --- 當未配對到人時 ---
+  //     if (!chatTarget.value.email) {
+  //       console.log("Waiting For User Login");
+  //       // --- 等待中 為 true ---
+  //       isLoading.value = true;
+  //     }
+  //   }
+  // });
 };
 
 // ---- 送出訊息 ----

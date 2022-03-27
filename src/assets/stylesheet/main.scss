@@ -61,6 +61,17 @@ body {
     justify-content: space-evenly;
     align-items: center;
     padding: 15px;
+    .sign-in-loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        height: 100px;
+        width: 100px;
+        background-color: rgba(32, 45, 58, 1) 81.3%;
+        border-radius: 10px;
+        padding: 10px;
+    }
     & > div {
         width: 50%;
         display: flex;
@@ -452,7 +463,6 @@ body {
         overflow: hidden;
         background-repeat: no-repeat;
         background-size: 100% 100%;
-   
     }
     .sign-up-container {
         width: 350px;
